@@ -6,7 +6,12 @@ struct ContentView: View {
   @State private var transitionDirection: TabTransitionDirection = .forward
   @State private var translation: CGFloat = 0
   @State private var isInteracting = false
-  @State private var feedCurrentIndex: Int = 0
+  @State private var feedCurrentIndex: Int
+
+  init() {
+    DailyQuoteSync.syncTodayIfNeeded()
+    _feedCurrentIndex = State(initialValue: DailyQuoteSync.todayIndex())
+  }
 
   private let tabSwitchAnimation = Animation.easeInOut(duration: 0.28)
   private let translationSpring = Animation.interactiveSpring(
@@ -37,6 +42,7 @@ struct ContentView: View {
       .ignoresSafeArea(edges: .bottom)
     }
     .background(Color.black.ignoresSafeArea())
+    .onAppear(perform: syncDailyQuoteAndIndex)
   }
 
   // MARK: - Content Layer with Gesture
@@ -142,6 +148,12 @@ struct ContentView: View {
       translation = 0
       isInteracting = false
     }
+  }
+
+  // MARK: - Daily Quote Sync
+  private func syncDailyQuoteAndIndex() {
+    DailyQuoteSync.syncTodayIfNeeded()
+    feedCurrentIndex = DailyQuoteSync.todayIndex()
   }
 }
 

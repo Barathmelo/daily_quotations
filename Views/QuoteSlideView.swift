@@ -3,6 +3,7 @@ import SwiftUI
 struct QuoteSlideView: View {
   let quote: Quote
   let index: Int
+  let isToday: Bool
   @ObservedObject var favoritesManager = FavoritesManager.shared
   let onToggleFavorite: () -> Void
   @Binding var appearance: AppearanceSettings
@@ -101,7 +102,7 @@ struct QuoteSlideView: View {
   }
 
   private var categoryBadge: some View {
-    let categoryText = index == 0 ? "Quote of the Day" : (quote.category ?? "Inspiration")
+    let categoryText = isToday ? "Quote of the Day" : (quote.category ?? "Inspiration")
 
     return Text(categoryText.uppercased())
       .font(.system(size: 13, weight: .semibold, design: .rounded))

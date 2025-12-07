@@ -52,25 +52,33 @@ struct FeedView: View {
           }
           .onEnded { value in
             let dragThreshold: CGFloat = screenHeight * 0.25
+          let isToday = currentIndex == DailyQuoteSync.todayIndex()
 
-            if value.translation.height < -dragThreshold
-              || value.predictedEndTranslation.height < -dragThreshold
-            {
-              // Swipe up - go to previous quote
-              withAnimation(.spring(response: 0.5, dampingFraction: 0.8)) {
-                currentIndex = (currentIndex - 1 + quotes.count) % quotes.count
+          if value.translation.height < -dragThreshold
+            || value.predictedEndTranslation.height < -dragThreshold
+          {
+            // Swipe up - go to previous quote (allowed even on today's quote)
+            withAnimation(.spring(response: 0.5, dampingFraction: 0.8)) {
+              currentIndex = (currentIndex - 1 + quotes.count) % quotes.count
+              dragOffset = 0
+            }
+            HapticManager.medium()
+          } else if value.translation.height > dragThreshold
+            || value.predictedEndTranslation.height > dragThreshold
+          {
+            // Swipe down - go to next quote (block if on today's quote)
+            if isToday {
+              withAnimation(.spring(response: 0.4, dampingFraction: 0.8)) {
                 dragOffset = 0
               }
-              HapticManager.medium()
-            } else if value.translation.height > dragThreshold
-              || value.predictedEndTranslation.height > dragThreshold
-            {
-              // Swipe down - go to next quote
+              HapticManager.light()
+            } else {
               withAnimation(.spring(response: 0.5, dampingFraction: 0.8)) {
                 currentIndex = (currentIndex + 1) % quotes.count
                 dragOffset = 0
               }
               HapticManager.medium()
+            }
             } else {
               // Spring back
               withAnimation(.spring(response: 0.4, dampingFraction: 0.8)) {
@@ -86,6 +94,9 @@ struct FeedView: View {
     .onAppear {
       currentIndex = persistedIndex
     }
+    .onChange(of: persistedIndex) { newValue in
+      currentIndex = newValue
+    }
     .onChange(of: currentIndex) { newValue in
       persistedIndex = newValue
     }
@@ -99,10 +110,12 @@ struct FeedView: View {
     } else {
       let actualIndex = ((index % quotes.count) + quotes.count) % quotes.count
       let quote = quotes[actualIndex]
+      let todayIndex = DailyQuoteSync.todayIndex()
 
       QuoteSlideView(
         quote: quote,
         index: actualIndex,
+        isToday: actualIndex == todayIndex,
         onToggleFavorite: {
           favoritesManager.toggleFavorite(quote)
         },
