@@ -48,7 +48,7 @@ struct FavoritesListView: View {
                     .font(.system(size: 28, weight: .bold))
                     .foregroundColor(.white)
                     .padding(.horizontal, 16)
-                    .padding(.top, 16)
+                    .padding(.top, 80)
                 
                 ForEach(favoritesManager.favorites) { quote in
                     favoriteCard(quote: quote)

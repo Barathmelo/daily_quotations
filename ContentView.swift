@@ -6,6 +6,7 @@ struct ContentView: View {
   @State private var transitionDirection: TabTransitionDirection = .forward
   @State private var translation: CGFloat = 0
   @State private var isInteracting = false
+  @State private var feedCurrentIndex: Int = 0
 
   private let tabSwitchAnimation = Animation.easeInOut(duration: 0.28)
   private let translationSpring = Animation.interactiveSpring(
@@ -79,7 +80,7 @@ struct ContentView: View {
   private func pageView(for view: AppView) -> some View {
     switch view {
     case .feed:
-      FeedView(appearance: appearance)
+      FeedView(appearance: appearance, persistedIndex: $feedCurrentIndex)
     case .favorites:
       FavoritesListView(appearance: appearance)
     }

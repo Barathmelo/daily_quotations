@@ -3,6 +3,7 @@ import SwiftUI
 struct FeedView: View {
   @ObservedObject var favoritesManager = FavoritesManager.shared
   @Binding var appearance: AppearanceSettings
+  @Binding var persistedIndex: Int
   @State private var currentIndex: Int = 0
   @State private var dragOffset: CGFloat = 0
   @State private var isDragging: Bool = false
@@ -11,6 +12,11 @@ struct FeedView: View {
   private let screenHeight = UIScreen.main.bounds.height
 
   var body: some View {
+    let upDragAmount = max(0, -dragOffset)
+    let downDragAmount = max(0, dragOffset)
+    let upProgress = min(1, upDragAmount / screenHeight)
+    let downProgress = min(1, downDragAmount / screenHeight)
+
     ZStack {
       // Background
       Color.black.ignoresSafeArea(.all)
@@ -18,8 +24,8 @@ struct FeedView: View {
       // Quote cards stack
       ZStack {
         // Previous card (always show for infinite loop)
-        quoteCard(at: currentIndex - 1, offset: -screenHeight + dragOffset)
-          .opacity(isDragging && dragOffset < 0 ? max(0, 0.3 + dragOffset / screenHeight) : 0)
+        quoteCard(at: currentIndex - 1, offset: -screenHeight + upDragAmount)
+          .opacity(isDragging && dragOffset < 0 ? max(0, upProgress) : 0)
           .zIndex(0)
 
         // Current card
@@ -27,8 +33,8 @@ struct FeedView: View {
           .zIndex(1)
 
         // Next card (always show for infinite loop)
-        quoteCard(at: currentIndex + 1, offset: screenHeight + dragOffset)
-          .opacity(isDragging && dragOffset < 0 ? max(0, 0.3 - dragOffset / screenHeight) : 0)
+        quoteCard(at: currentIndex + 1, offset: screenHeight - downDragAmount)
+          .opacity(isDragging && dragOffset > 0 ? max(0, downProgress) : 0)
           .zIndex(0)
       }
       .gesture(
@@ -41,19 +47,25 @@ struct FeedView: View {
                 HapticManager.light()
               }
 
-              // Only allow upward dragging
-              if value.translation.height < 0 {
-                dragOffset = value.translation.height
-              }
+              dragOffset = value.translation.height
             }
           }
           .onEnded { value in
             let dragThreshold: CGFloat = screenHeight * 0.25
 
             if value.translation.height < -dragThreshold
-              || abs(value.predictedEndTranslation.height) > dragThreshold
+              || value.predictedEndTranslation.height < -dragThreshold
             {
-              // Swipe up - go to next quote
+              // Swipe up - go to previous quote
+              withAnimation(.spring(response: 0.5, dampingFraction: 0.8)) {
+                currentIndex = (currentIndex - 1 + quotes.count) % quotes.count
+                dragOffset = 0
+              }
+              HapticManager.medium()
+            } else if value.translation.height > dragThreshold
+              || value.predictedEndTranslation.height > dragThreshold
+            {
+              // Swipe down - go to next quote
               withAnimation(.spring(response: 0.5, dampingFraction: 0.8)) {
                 currentIndex = (currentIndex + 1) % quotes.count
                 dragOffset = 0
@@ -71,6 +83,12 @@ struct FeedView: View {
       )
     }
     .ignoresSafeArea(.all)
+    .onAppear {
+      currentIndex = persistedIndex
+    }
+    .onChange(of: currentIndex) { newValue in
+      persistedIndex = newValue
+    }
   }
 
   @ViewBuilder
