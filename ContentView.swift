@@ -6,11 +6,10 @@ struct ContentView: View {
   @State private var transitionDirection: TabTransitionDirection = .forward
   @State private var translation: CGFloat = 0
   @State private var isInteracting = false
-  @State private var feedCurrentIndex: Int
+  @State private var feedCurrentIndex: Int = 0
 
   init() {
     DailyQuoteSync.syncTodayIfNeeded()
-    _feedCurrentIndex = State(initialValue: DailyQuoteSync.todayIndex())
   }
 
   private let tabSwitchAnimation = Animation.easeInOut(duration: 0.28)
@@ -153,7 +152,7 @@ struct ContentView: View {
   // MARK: - Daily Quote Sync
   private func syncDailyQuoteAndIndex() {
     DailyQuoteSync.syncTodayIfNeeded()
-    feedCurrentIndex = DailyQuoteSync.todayIndex()
+    feedCurrentIndex = 0
   }
 }
 
