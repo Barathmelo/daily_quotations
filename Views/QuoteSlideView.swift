@@ -4,6 +4,8 @@ struct QuoteSlideView: View {
   let quote: Quote
   let index: Int
   let isToday: Bool
+  let isPremium: Bool
+  let onRequirePaywall: () -> Void
   @ObservedObject var favoritesManager = FavoritesManager.shared
   let onToggleFavorite: () -> Void
   @Binding var appearance: AppearanceSettings
@@ -329,6 +331,10 @@ struct QuoteSlideView: View {
     let isSelected = appearance.font == font
 
     return Button(action: {
+      guard AccessControl.shared.canUseFont(font: font, isPremium: isPremium) else {
+        onRequirePaywall()
+        return
+      }
       withAnimation(.easeOut(duration: 0.15)) {
         appearance.font = font
         HapticManager.selection()

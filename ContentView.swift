@@ -1,12 +1,15 @@
 import SwiftUI
 
 struct ContentView: View {
+  @EnvironmentObject private var subscriptionManager: SubscriptionManager
   @StateObject private var appearanceManager = AppearanceManager.shared
   @State private var currentView: AppView = .feed
   @State private var transitionDirection: TabTransitionDirection = .forward
   @State private var translation: CGFloat = 0
   @State private var isInteracting = false
   @State private var feedCurrentIndex: Int = 0
+  @State private var showPaywall = false
+  @Environment(\.scenePhase) private var scenePhase
 
   init() {
     DailyQuoteSync.syncTodayIfNeeded()
@@ -42,6 +45,23 @@ struct ContentView: View {
     }
     .background(Color.black.ignoresSafeArea())
     .onAppear(perform: syncDailyQuoteAndIndex)
+    .task {
+      await subscriptionManager.refreshSubscriptionStatus()
+      await subscriptionManager.loadProducts()
+    }
+    .onChange(of: scenePhase) { phase in
+      if phase == .active {
+        Task {
+          await subscriptionManager.refreshSubscriptionStatus()
+        }
+      }
+    }
+    .sheet(isPresented: $showPaywall) {
+      PaywallView()
+        .environmentObject(subscriptionManager)
+        .presentationDetents([.fraction(0.75)])
+        .presentationDragIndicator(.visible)
+    }
   }
 
   // MARK: - Content Layer with Gesture
@@ -85,7 +105,12 @@ struct ContentView: View {
   private func pageView(for view: AppView) -> some View {
     switch view {
     case .feed:
-      FeedView(appearance: appearance, persistedIndex: $feedCurrentIndex)
+      FeedView(
+        appearance: appearance,
+        persistedIndex: $feedCurrentIndex,
+        onRequirePaywall: { showPaywall = true }
+      )
+      .environmentObject(subscriptionManager)
     case .favorites:
       FavoritesListView(appearance: appearance)
     }
